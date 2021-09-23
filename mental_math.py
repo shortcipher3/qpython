@@ -98,6 +98,22 @@ def modulo(num_problems=10, pause=30, digits=6, modulo=9):
         time.sleep(pause)
         say(str(n) + ' modulo ' + str(modulo) + ' is ' + str(n % modulo))
 
+def pegs(num_problems=10,
+	        n_digits=2,
+	        pause=5):
+    #TODO give sounds/words not ready
+    say('major system pegs')
+    smallest = 10**(n_digits-1)
+    largest = 10**(n_digits)-1
+    randint = np.random.randint
+    ns = randint(smallest,
+    	             largest,
+    	             (num_problems,))
+    for n in ns:
+        say(f'Peg {n}')
+        time.sleep(pause)
+        say(f'Pegged {n}')
+
 def peg(num_problems=10, pause=5):
     # not ready
     say('major system pegs')
@@ -122,14 +138,23 @@ def memorize(num_problems=10, pause=5):
         time.sleep(pause)
         say(' '.join([str(x) + ' ' + str(y) for x, y in operands]))
 
-modulo(num_problems=2, pause=30, digits=6, modulo=9)
-whole_roots(num_problems=2, pause=10, digits=2, n=3)
-whole_roots(num_problems=2, pause=10, digits=2, n=2)
+#TODO Thanksgiving 2021 to calendar date
+# Thanksgiving 4th Thursday
+# Martin Luther King Jr Day 3rd Monday in January
+# Presidents Day 3rd Monday in February
+# Memorial day last Monday in May
+# Labor day first Monday in September
+# Columbus day 2nd Monday in October
+
+pegs(1)
+#modulo(num_problems=2, pause=30, digits=6, modulo=9)
+#whole_roots(num_problems=2, pause=10, digits=2, n=3)
+#whole_roots(num_problems=2, pause=10, digits=2, n=2)
 #roots(num_problems=2, pause=10, digits=2, n=2)
 #roots(num_problems=2, pause=10, digits=2, n=3)
 #powers(num_problems=2, pause=30, digits_1=2, digits_2=2)
 #powers(num_problems=2, pause=30, digits_1=2, digits_2=3)
-calendar_days(num_problems=2, pause=30)
+#calendar_days(num_problems=2, pause=30)
 #memorize(num_problems=2, pause=5)
 #multiplication(num_problems=2, pause=10, digits_1=2, digits_2=1)
 #subtraction(num_problems=2, pause=10, digits_1=2, digits_2=1)
