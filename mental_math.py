@@ -138,6 +138,7 @@ def memorize(num_problems=10, pause=5):
         time.sleep(pause)
         say(' '.join([str(x) + ' ' + str(y) for x, y in operands]))
 
+#TODO get everything under 42 columns so it is easily readable
 #TODO Thanksgiving 2021 to calendar date
 # Thanksgiving 4th Thursday
 # Martin Luther King Jr Day 3rd Monday in January
