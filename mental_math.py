@@ -1,3 +1,8 @@
+'''
+Scripts to practice some of the "Secrets
+of Mental Math" a book with techniques
+written by Arthur T. Benjamin
+'''
 from numpy.random import choice, randint
 import time
 from random import randrange
