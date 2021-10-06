@@ -18,6 +18,7 @@ except:
 def say(text):
   if droid is not None:
     droid.ttsSpeak(text)
+    print(text)
   else:
     print(text)
 
@@ -50,7 +51,7 @@ def floating_holiday(holiday, year):
   """
   if holiday['week'] == 5:
     return floating_last_day(holiday,
-    	            b            year)
+    	                         year)
   for k in range(1, 8):
     day = int((holiday['week']-1)*7 + k)
     dt = datetime(year, holiday['month'],
@@ -75,7 +76,7 @@ def floating_last_day(holiday, year):
     hol_dt = dt - td
     wkday = (hol_dt.weekday() + 1) % 7
     if wkday == weekday:
-      return holiday_dt
+      return hol_dt
   raise Exception
 
 def weekday(dt):
@@ -314,13 +315,19 @@ def memorize(num_problems=10,
 
 if __name__ == '__main__':
   #pegs(1)
-  calendar_days(num_problems=10, pause=30)
-  floating_holidays(num_problems=3,
-  	   pause=30,
-  	   practice_holidays=[
-  	     'Columbus',
-  	     'Presidents',
-  	     'Martin Luther King Junior'])
+  calendar_days(num_problems=10, pause=20)
+  floating_holidays(num_problems=10,
+  	   pause=30)
+  #floating_holidays(num_problems=10,
+  #	   pause=30,
+  #	   practice_holidays=[
+  #      'Memorial'])
+  #floating_holidays(num_problems=10,
+  #	   pause=30,
+  #	   practice_holidays=[
+  #      'Columbus',
+  #	     'Presidents',
+  #	     'Martin Luther King Junior'])
   #modulo(num_problems=2, pause=30,
   #       digits=6, modulo=9)
   #whole_roots(num_problems=2, pause=10,
