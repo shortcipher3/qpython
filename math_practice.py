@@ -4,10 +4,12 @@ of Mental Math" a book with techniques
 written by Arthur T. Benjamin
 '''
 from numpy.random import choice, randint
+import numpy as np
 import time
 from random import randrange
 from datetime import datetime
 from datetime import timedelta
+import json
 
 if False:
   import androidhelper
@@ -15,22 +17,29 @@ if False:
 else:
   droid = None
 
+def say(text):
+  if droid is not None:
+    droid.ttsSpeak(text)
+  else:
+    print(text)
 
 class ProblemInterface:
 
-  def __init__(self, pause):
+  def __init__(self, pause, **kwargs):
     self.pause = pause
 
   #* init, pause, any selection, which holidays, date range
   def human_readable(self) -> (str, str):
-    pass
+    raise NotImplementedError("Inheriting class needs to implement this")
+
+  def generate_quiz(num_problems, **kwargs):# -> Quiz:
+    raise NotImplementedError("Inheriting class needs to implement this")
 
   def match_answer(self, answer) -> bool:
-    "3, Wednesday, wednesday"
-    pass
+    raise NotImplementedError("Inheriting class needs to implement this")
 
   def to_latex(self) -> (str, str):
-    pass
+    raise NotImplementedError("Inheriting class needs to implement this")
 
   def ask_pause_answer(self) -> None:
     """Ask aloud, pause, answer"""
@@ -61,11 +70,59 @@ class ProblemInterface:
     return self.match_answer(your_answer)
 
 
-class DayOfTheWeek(ProblemInterface):
+class Quiz:
 
-  def __init__(self, date_time, pause=20):
-    super(DayOfTheWeek, self).__init__(pause)
-    self.date_time = date_time
+  def __init__(self, problems, log=None):#: list(ProblemInterface)
+    self.problems = problems
+    self.finished = False
+    self.log = log
+
+  def worksheet(self, speak=True, grade=True, write=True):
+    grades = []
+    times = []
+    for problem in self.problems:
+      q, a = problem.human_readable()
+      if speak:
+        say(q)
+      if write:
+        print(q)
+      if grade:
+        t1 = time.time()
+        answer = input()
+        t2 = time.time()
+        grades.append(problem.match_answer(answer))
+        times.append(t2 - t1)
+      else:
+        time.sleep(problem.pause)
+      if speak:
+        say(a)
+      if write:
+        print(a)
+    self.grades = grades
+    self.times = times
+    self.finished = True
+    if self.log is not None:
+      with open(self.log, 'a+') as f:
+        f.write(self.get_summary())
+    print(self.get_summary())
+
+
+  def get_summary(self):
+    if not self.finished:
+      raise RuntimeError("Complete the worksheet before getting a summary")
+    summary = {
+                "problem_count": len(self.problems),
+                "correct_count": int(np.sum(self.grades)),
+                "total_time": float(np.sum(self.times)),
+                "mean_time": float(np.mean(self.times)),
+                "max_time": float(np.max(self.times)),
+                "median_time": float(np.median(self.times)),
+                "std_time": float(np.std(self.times)),
+                "correct": float(np.mean(self.grades)),
+              }
+    return json.dumps(summary)
+
+class DayOfTheWeek(ProblemInterface):
 
   def datetime_to_calendar(dt: datetime):
     '''Convert month day year'''
@@ -76,9 +133,6 @@ class DayOfTheWeek(ProblemInterface):
               'November', 'December']
     month = months[dt.month-1]
     return f'{month} {dt.day} {dt.year}'
-
-  def weekday(self) -> int:
-    return (self.date_time.weekday() + 1) % 7
 
   def weekday_to_name(day: int) -> str:
     days = {
@@ -104,10 +158,37 @@ class DayOfTheWeek(ProblemInterface):
       }
     return days[day.lower()]
 
+  def random_date(start, end):
+    """
+    This function will return a random
+    datetime between two datetime objects.
+    """
+    delta = end - start
+    day_secs = delta.days * 24 * 60 * 60
+    int_delta = day_secs + delta.seconds
+    random_second = randrange(int_delta)
+    td = timedelta(seconds=random_second)
+    return start + td
+
+  def generate_quiz(num_problems,
+                    start=datetime(1780, 1, 1),
+                    end=datetime(2050, 1, 1),
+                    pause=20):# -> Quiz:
+    problems = []
+    for k in range(num_problems):
+      dt = random_date(start, end)
+      problems.append(DayOfTheWeek(dt, pause=pause))
+    return Quiz(problems)
+
+  def __init__(self, date_time, pause=20):
+    super(DayOfTheWeek, self).__init__(pause)
+    self.date_time = date_time
+    self.answer = (self.date_time.weekday() + 1) % 7
+
   def human_readable(self) -> (str, str):
     caldt = DayOfTheWeek.datetime_to_calendar(self.date_time)
     q = f'What day of the week was {caldt}?'
-    a = f'{caldt} was a {DayOfTheWeek.weekday_to_name(self.weekday())}'
+    a = f'{caldt} was a {DayOfTheWeek.weekday_to_name(self.answer)}'
     return q, a
 
   def match_answer(self, answer) -> bool:
@@ -116,7 +197,7 @@ class DayOfTheWeek(ProblemInterface):
       answer = int(answer)
     except:
       answer = DayOfTheWeek.name_to_weekday(answer)
-    return self.weekday() == answer
+    return self.answer == answer
 
   def to_latex(self) -> (str, str):
     #TODO
@@ -124,334 +205,152 @@ class DayOfTheWeek(ProblemInterface):
 
 
 class FloatingHoliday(ProblemInterface):
-  def __init__(self, pause=20):
-    self.pause = pause
+
+  holidays = {
+    'Thanksgiving Day': {
+     'weekday': 4, 'week': 4, 'month': 11},
+    'Martin Luther King Junior Day': {
+     'weekday': 1, 'week': 3, 'month': 1},
+    'Presidents Day': {
+     'weekday': 1, 'week': 3, 'month': 2},
+    'Memorial Day': {
+     'weekday': 1, 'week': 5, 'month': 5},
+    'Labor Day': {
+     'weekday': 1, 'week': 1, 'month': 9},
+    'Columbus Day': {
+     'weekday': 1, 'week': 2, 'month': 10},
+    }
+
+  def floating_holiday(holiday, year):
+    """
+    Given a year and a holiday return the
+    datetime object
+    """
+    if holiday['week'] == 5:
+      return FloatingHoliday.floating_last_day(holiday, year)
+    for k in range(1, 8):
+      day = int((holiday['week']-1)*7 + k)
+      dt = datetime(year, holiday['month'],
+                    day)
+      wkday = dt.weekday() + 1
+      if wkday == holiday['weekday']:
+        return dt
+    raise Exception
+
+  def floating_last_day(holiday, year):
+    """
+    Given a year and a holiday return the
+    datetime object representing the last
+    day of the month with the given weekday
+    """
+    month = (holiday['month'] + 1) % 12
+    weekday = holiday['weekday']
+    for k in range(1, 8):
+      dt = datetime(year, month, 1)
+      day_secs = k * 24 * 60 * 60
+      td = timedelta(seconds=day_secs)
+      holiday_dt = dt - td
+      wkday = (holiday_dt.weekday() + 1) % 7
+      if wkday == weekday:
+        return holiday_dt
+    raise Exception
+
+  def generate_quiz(num_problems,
+                    start=1780,
+                    end=2050,
+                    pause=20):# -> Quiz:
+    problems = []
+    years = range(start, end)
+    holidays = list(FloatingHoliday.holidays.keys())
+    rng = range(len(holidays))
+    hs = choice(rng, (num_problems, ))
+    for h in hs:
+      holiday = holidays[h]
+      year = choice(years, (1,))[0]
+      problems.append(FloatingHoliday(holiday, year, pause))
+    return Quiz(problems)
+
+  def __init__(self, holiday, year, pause=30):
+      super(FloatingHoliday, self).__init__(pause)
+      self.holiday = holiday
+      self.year = year
+      holiday = FloatingHoliday.holidays[self.holiday]
+      self.dt = FloatingHoliday.floating_holiday(holiday, year)
+      self.calendar_date = date_time2calendar(self.dt)
+
   def human_readable(self) -> (str, str):
-    pass
+    h = f'{self.holiday} of {self.year}'
+    q = f'What day of the month was {h}'
+    a = f'{h} was {self.calendar_date}'
+    return q, a
+
   def match_answer(self, answer) -> bool:
-    "3, Wednesday, wednesday"
-    pass
+    try:
+        answer = int(answer)
+    except:
+        pass
+    return self.dt.day == answer
+
   def to_latex(self) -> (str, str):
+    #TODO
     pass
 
 
-def date_time2calendar(dt):
-  '''Convert month day year'''
-  months = ['January', 'February',
-            'March', 'April', 'May',
-            'June', 'July', 'August',
-            'September', 'October',
-            'November', 'December']
-  month = months[dt.month-1]
-  return f'{month} {dt.day} {dt.year}'
+class Addition(ProblemInterface):
 
-def random_date(start, end):
-  """
-  This function will return a random
-  datetime between two datetime objects.
-  """
-  delta = end - start
-  day_secs = delta.days * 24 * 60 * 60
-  int_delta = day_secs + delta.seconds
-  random_second = randrange(int_delta)
-  td = timedelta(seconds=random_second)
-  return start + td
+  def generate_quiz(num_problems, digits_1=1, digits_2=1, pause=30):# -> Quiz:
+    range1 = range(10**(digits_1-1), 10**digits_1)
+    range2 = range(10**(digits_2-1), 10**digits_2)
+    x = choice(range1, (num_problems, ),
+               False if num_problems<(10**digits_1) else True)
+    y = choice(range2, (num_problems, ),
+               False if num_problems<(10**digits_2) else True)
+    problems = []
+    for a, b in zip(x, y):
+      problems.append(Addition(a, b, pause))
+    return Quiz(problems)
 
-def floating_holiday(holiday, year):
-  """
-  Given a year and a holiday return the
-  datetime object
-  """
-  if holiday['week'] == 5:
-    return floating_last_day(holiday, year)
-  for k in range(1, 8):
-    day = int((holiday['week']-1)*7 + k)
-    dt = datetime(year, holiday['month'],
-                  day)
-    wkday = dt.weekday() + 1
-    if wkday == holiday['weekday']:
-      return dt
-  raise Exception
+  def __init__(self, operand_1, operand_2, pause=30):
+      super(Addition, self).__init__(pause)
+      self.operand_1 = operand_1
+      self.operand_2 = operand_2
+      self.answer = operand_1 + operand_2
 
-def floating_last_day(holiday, year):
-  """
-  Given a year and a holiday return the
-  datetime object representing the last
-  day of the month with the given weekday
-  """
-  month = (holiday['month'] + 1) % 12
-  weekday = holiday['weekday']
-  for k in range(1, 8):
-    dt = datetime(year, month, 1)
-    day_secs = k * 24 * 60 * 60
-    td = timedelta(seconds=day_secs)
-    holiday_dt = dt - td
-    wkday = (holiday_dt.weekday() + 1) % 7
-    if wkday == weekday:
-      return holiday_dt
-  raise Exception
+  def human_readable(self) -> (str, str):
+    problem = f'{self.operand_1} plus {self.operand_2}'
+    q = f'What is {problem}'
+    a = f'{problem} equals {self.answer}'
+    return q, a
 
-def weekday(dt):
-  '''get weekday'''
-  days = ['Monday', 'Tuesday',
-          'Wednesday', 'Thursday',
-          'Friday', 'Saturday',
-          'Sunday']
-  return days[dt.weekday()]
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
 
 
-def multiplication(num_problems=10,
-                 pause=30, digits_1=2,
-                 digits_2=2):
-  '''Practice multiplication'''
-  p1 = f'multiplication of {digits_1}'
-  p2 = f'digit numbers by {digits_2}'
-  p3 = 'digit numbers'
-  say(f'{p1} {p2} {p3}')
-  range1 = range(10**(digits_1-1),
-                 10**digits_1)
-  range2 = range(10**(digits_2-1),
-                 10**digits_2)
-  x = choice(range1, (num_problems, ),
-             False)
-  y = choice(range2, (num_problems, ),
-             True)
-  for k in range(num_problems):
-    problem = f'{x[k]} times {y[k]}'
-    say(f'What is {problem}')
-    time.sleep(pause)
-    say(f'{problem} equals {x[k]*y[k]}')
-
-def addition(num_problems=10, pause=30,
-             digits_1=2, digits_2=2):
-  '''Practice Addition'''
-  p1 = f'addition of {digits_1} digit'
-  p2 = f'numbers by {digits_2} digit numbers'
-  say(f'{p1} {p2}')
-  range1 = range(10**(digits_1-1), 10**digits_1)
-  range2 = range(10**(digits_2-1), 10**digits_2)
-  x = choice(range1, (num_problems, ),
-             False)
-  y = choice(range2, (num_problems, ),
-             False)
-  for k in range(num_problems):
-    problem = f'{x[k]} plus {y[k]}'
-    say(f'What is {problem}')
-    time.sleep(pause)
-    say(f'{problem} equals {x[k]+y[k]}')
-
-def subtraction(num_problems=10, pause=30,
-                digits_1=2, digits_2=2):
-  '''Practice subtraction'''
-  p1 = f'subtraction of {digits_1} digit'
-  p2 = f'numbers by {digits_2} digit numbers'
-  say(f'{p1} {p2}')
-  range1 = range(10**(digits_1-1), 10**digits_1)
-  range2 = range(10**(digits_2-1), 10**digits_2)
-  x = choice(range1, (num_problems, ),
-             False)
-  y = choice(range2, (num_problems, ),
-             False)
-  for k in range(num_problems):
-    problem = f'{x[k]} minus  {y[k]}'
-    say(f'What is {problem}')
-    time.sleep(pause)
-    say(f'{problem} equals {x[k]-y[k]}')
-
-def whole_roots(num_problems=10, pause=30,
-                digits=2, n=2):
-  '''
-  Practice getting whole roots of n digit
-  numbers
-  '''
-  p1 = f'whole {n} roots of {digits}'
-  p2 = 'digit numbers'
-  say(f'{p1} {p2}')
-  rng = range(10**(digits-1), 10**digits)
-  x = choice(rng, (num_problems, ), False)
-  for k in range(num_problems):
-    problem = f'{n} root of {x[k]**n}'
-    say(f'What is the {problem}?')
-    time.sleep(pause)
-    say(f'The {problem} is {x[k]}')
-
-def roots(num_problems=10, pause=30,
-          digits=2, n=2):
-  '''
-  Practice getting approximate roots of n
-  digit numbers
-  '''
-  p1 = f'{n} roots of {digits}'
-  p2 = 'digit numbers'
-  say(f'{p1} {p2}')
-  rng = range(10**(digits-1), 10**digits)
-  x = choice(rng, (num_problems, ), False)
-  for k in range(num_problems):
-    problem = f'{n} root of {x[k]}'
-    say(f'What is the {problem}?')
-    time.sleep(pause)
-    say(f'The {problem} is {x[k]**(1.0/n)}')
-
-def powers(num_problems=10, pause=30,
-           digits=2, n=2):
-  '''Practice exponentiation'''
-  p1 = f'{n} powers of {digits}'
-  p2 = 'digit numbers'
-  say(f'{p1} {p2}')
-  rng = range(10**(digits-1), 10**digits)
-  x = choice(rng, (num_problems, ), False)
-  for k in range(num_problems):
-    problem = f'{x[k]} to the power of {n}'
-    say(f'What is {problem}?')
-    time.sleep(pause)
-    say(f'{problem} equals {x[k]**(n)}')
-
-def calendar_days(num_problems=10,
-                  pause=30):
-  '''
-  Practice: given a date produce the day
-  of the week
-  '''
-  say('days of the week')
-  start = datetime(1780, 1, 1)
-  end = datetime(2050, 1, 1)
-  dates = []
-  for k in range(num_problems):
-    dates.append(random_date(start, end))
-  for date in dates:
-    caldt = date_time2calendar(date)
-    say(f'What day of the week was {caldt}?')
-    time.sleep(pause)
-    say(f'{caldt} was a {weekday(date)}')
-
-def floating_holidays(num_problems=2,
-                      pause=30):
-  '''
-  Practice: given a floating holiday and
-  the year produce the day of the month
-  '''
-  say('floating holidays')
-  holidays = [
-  {'holiday': 'Thanksgiving',
-   'weekday': 4, 'week': 4, 'month': 11},
-  {'holiday': 'Martin Luther King Junior',
-   'weekday': 1, 'week': 3, 'month': 1},
-  {'holiday': 'Presidents Day',
-   'weekday': 1, 'week': 3, 'month': 2},
-  {'holiday': 'Memorial Day',
-   'weekday': 1, 'week': 5, 'month': 5},
-  {'holiday': 'Labor Day',
-   'weekday': 1, 'week': 1, 'month': 9},
-  {'holiday': 'Columbus Day',
-   'weekday': 1, 'week': 2, 'month': 10},
-  ]
-  years = range(1780, 2050)
-  rng = range(len(holidays))
-  x = choice(rng, (num_problems, ))
-  for k in x:
-    holiday = holidays[k]
-    year = choice(years, (1,))[0]
-    dt = floating_holiday(holiday, year)
-    h = f'{holiday["holiday"]} of {year}'
-    say(f'What day of the month was {h}')
-    time.sleep(pause)
-    calendar_date = date_time2calendar(dt)
-    say(f'{h} was {calendar_date}')
-# Thanksgiving 4th Thursday
-# Martin Luther King Jr Day 3rd Monday in January
-# Presidents Day 3rd Monday in February
-# Memorial day last Monday in May
-# Labor day first Monday in September
-# Columbus day 2nd Monday in October
-
-def modulo(num_problems=10, pause=30,
-           digits=6, modulo=9):
-  ''' Practice modulo '''
-  say('modulo ' + str(modulo))
-  start = 10**(digits-1)
-  end = 10**digits
-  for k in range(num_problems):
-    n = randint(start, end)
-    problem = f'{n} modulo {modulo}'
-    say(f'What is {problem}')
-    time.sleep(pause)
-    say(f'{problem} is {n % modulo}')
-
-def pegs(num_problems=10,
-         n_digits=2,
-         pause=5):
-  #TODO give sounds/words not ready
-  say('major system pegs')
-  smallest = 10**(n_digits-1)
-  largest = 10**(n_digits)-1
-  ns = randint(smallest,
-               largest,
-               (num_problems,))
-  for n in ns:
-    say(f'Peg {n}')
-    time.sleep(pause)
-    say(f'Pegged {n}')
-
-def peg(num_problems=10,
-        pause=5):
-  #TODO get working
-  say('major system pegs')
-  for k in range(num_problems):
-    ops = randint(0, 10, (10, 2))
-    for x, y in ops:
-      say('Peg ' + str(x*10+y))
-      time.sleep(pause)
-    say('The complete number is:')
-    time.sleep(pause)
-    digits = [f'{x} {y}' for x, y in ops]
-    say(' '.join(digits))
-
-def memorize(num_problems=10,
-             pause=5):
-  #TODO get working
-  say('major system pegs')
-  for k in range(num_problems):
-    ops = randint(0, 10, (10, 2))
-    for x, y in ops:
-      say('Peg ' + str(x*10+y))
-      time.sleep(pause)
-    say('The complete number is:')
-    time.sleep(pause)
-    digits = [f'{x} {y}' for x, y in ops]
-    say(' '.join(digits))
 
 if __name__ == '__main__':
-  #pegs(1)
-  start = datetime(1780, 1, 1)
-  end = datetime(2050, 1, 1)
-  dt = random_date(start, end)
-  dotw = DayOfTheWeek(dt, pause=5)
-  dotw.print_pause_answer()
-  print(dotw.print_input())
-  #calendar_days(num_problems=10, pause=1)
-  #floating_holidays(num_problems=10, pause=1)
-  #modulo(num_problems=2, pause=30,
-  #       digits=6, modulo=9)
-  #whole_roots(num_problems=2, pause=10,
-  #            digits=2, n=3)
-  #whole_roots(num_problems=2, pause=10,
-  #            digits=2, n=2)
-  #roots(num_problems=2, pause=10,
-  #      digits=2, n=2)
-  #roots(num_problems=2, pause=10,
-  #      digits=2, n=3)
-  #powers(num_problems=2, pause=30,
-  #       digits_1=2, digits_2=2)
-  #powers(num_problems=2, pause=30,
-  #       digits_1=2, digits_2=3)
-  #calendar_days(num_problems=2, pause=30)
-  #memorize(num_problems=2, pause=5)
-  #multiplication(num_problems=2, pause=10,
-  #               digits_1=2, digits_2=1)
-  #subtraction(num_problems=2, pause=10,
-  #            digits_1=2, digits_2=1)
-  #addition(num_problems=2, pause=10,
-  #         digits_1=2, digits_2=1)
+  #dotw = DayOfTheWeek(dt, pause=5)
+  #dotw.print_pause_answer()
+  #print(dotw.print_input())
+  #fh = FloatingHoliday("Thanksgiving Day", 2021, pause=5)
+  #fh.print_pause_answer()
+  #print(fh.print_input())
+  #additions = Addition(6, 7, pause=5)
+  #additions.print_pause_answer()
+  #print(additions.print_input())
+  #ps = Addition.generate_quiz(10, digits_1=1, digits_2=1, pause=30)
+  #ps.worksheet(speak=False)
+  ps = DayOfTheWeek.generate_quiz(10)
+  ps.worksheet(speak=False)
+  ps = FloatingHoliday.generate_quiz(10)
+  ps.worksheet(speak=False)
 
 
 # vim: set ts=2 sts=2 et sw=2 ft=python:
