@@ -9,15 +9,16 @@ from random import randrange
 from datetime import datetime
 from datetime import timedelta
 
-if True:
+try:
   import androidhelper
   droid = androidhelper.Android()
-else:
+except:
   droid = None
 
 def say(text):
   if droid is not None:
     droid.ttsSpeak(text)
+    print(text)
   else:
     print(text)
 
@@ -49,7 +50,8 @@ def floating_holiday(holiday, year):
   datetime object
   """
   if holiday['week'] == 5:
-    return floating_last_day(holiday, year)
+    return floating_last_day(holiday,
+    	                         year)
   for k in range(1, 8):
     day = int((holiday['week']-1)*7 + k)
     dt = datetime(year, holiday['month'],
@@ -71,10 +73,10 @@ def floating_last_day(holiday, year):
     dt = datetime(year, month, 1)
     day_secs = k * 24 * 60 * 60
     td = timedelta(seconds=day_secs)
-    holiday_dt = dt - td
-    wkday = (holiday_dt.weekday() + 1) % 7
+    hol_dt = dt - td
+    wkday = (hol_dt.weekday() + 1) % 7
     if wkday == weekday:
-      return holiday_dt
+      return hol_dt
   raise Exception
 
 def weekday(dt):
@@ -211,7 +213,8 @@ def calendar_days(num_problems=10,
     say(f'{caldt} was a {weekday(date)}')
 
 def floating_holidays(num_problems=2,
-                      pause=30):
+                      pause=30,
+                      practice_holidays=[]):
   '''
   Practice: given a floating holiday and
   the year produce the day of the month
@@ -222,15 +225,19 @@ def floating_holidays(num_problems=2,
    'weekday': 4, 'week': 4, 'month': 11},
   {'holiday': 'Martin Luther King Junior',
    'weekday': 1, 'week': 3, 'month': 1},
-  {'holiday': 'Presidents Day',
+  {'holiday': 'Presidents',
    'weekday': 1, 'week': 3, 'month': 2},
-  {'holiday': 'Memorial Day',
+  {'holiday': 'Memorial',
    'weekday': 1, 'week': 5, 'month': 5},
-  {'holiday': 'Labor Day',
+  {'holiday': 'Labor',
    'weekday': 1, 'week': 1, 'month': 9},
-  {'holiday': 'Columbus Day',
+  {'holiday': 'Columbus',
    'weekday': 1, 'week': 2, 'month': 10},
   ]
+  if len(practice_holidays) > 0:
+      holidays = [h for h in holidays
+            if h['holiday'] in
+            practice_holidays]
   years = range(1780, 2050)
   rng = range(len(holidays))
   x = choice(rng, (num_problems, ))
@@ -238,7 +245,7 @@ def floating_holidays(num_problems=2,
     holiday = holidays[k]
     year = choice(years, (1,))[0]
     dt = floating_holiday(holiday, year)
-    h = f'{holiday["holiday"]} of {year}'
+    h = f'{holiday["holiday"]} Day of {year}'
     say(f'What day of the month was {h}')
     time.sleep(pause)
     calendar_date = date_time2calendar(dt)
@@ -308,8 +315,19 @@ def memorize(num_problems=10,
 
 if __name__ == '__main__':
   #pegs(1)
-  calendar_days(num_problems=10, pause=1)
-  floating_holidays(num_problems=10, pause=1)
+  calendar_days(num_problems=10, pause=20)
+  floating_holidays(num_problems=10,
+  	   pause=30)
+  #floating_holidays(num_problems=10,
+  #	   pause=30,
+  #	   practice_holidays=[
+  #      'Memorial'])
+  #floating_holidays(num_problems=10,
+  #	   pause=30,
+  #	   practice_holidays=[
+  #      'Columbus',
+  #	     'Presidents',
+  #	     'Martin Luther King Junior'])
   #modulo(num_problems=2, pause=30,
   #       digits=6, modulo=9)
   #whole_roots(num_problems=2, pause=10,
