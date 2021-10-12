@@ -11,15 +11,18 @@ from datetime import datetime
 from datetime import timedelta
 import json
 
-if False:
+try:
   import androidhelper
   droid = androidhelper.Android()
-else:
+except:
   droid = None
 
 def say(text):
   if droid is not None:
     droid.ttsSpeak(text)
+    speakingEnd = droid.ttsIsSpeaking().result
+    while speakingEnd:
+      speakingEnd = droid.ttsIsSpeaking().result
   else:
     print(text)
 
@@ -80,8 +83,10 @@ class Quiz:
   def worksheet(self, speak=True, grade=True, write=True):
     grades = []
     times = []
+    types = []
     for problem in self.problems:
       q, a = problem.human_readable()
+      types.append(str(type(problem)))
       if speak:
         say(q)
       if write:
@@ -100,6 +105,7 @@ class Quiz:
         print(a)
     self.grades = grades
     self.times = times
+    self.types = types
     self.finished = True
     if self.log is not None:
       with open(self.log, 'a+') as f:
@@ -111,11 +117,13 @@ class Quiz:
     if not self.finished:
       raise RuntimeError("Complete the worksheet before getting a summary")
     summary = {
+    	            "problem_types": [t for t in np.unique(self.types)],
                 "problem_count": len(self.problems),
                 "correct_count": int(np.sum(self.grades)),
                 "total_time": float(np.sum(self.times)),
                 "mean_time": float(np.mean(self.times)),
                 "max_time": float(np.max(self.times)),
+                "min_time": float(np.min(self.times)),
                 "median_time": float(np.median(self.times)),
                 "std_time": float(np.std(self.times)),
                 "correct": float(np.mean(self.grades)),
@@ -176,7 +184,7 @@ class DayOfTheWeek(ProblemInterface):
                     pause=20):# -> Quiz:
     problems = []
     for k in range(num_problems):
-      dt = random_date(start, end)
+      dt = DayOfTheWeek.random_date(start, end)
       problems.append(DayOfTheWeek(dt, pause=pause))
     return Quiz(problems)
 
@@ -255,6 +263,16 @@ class FloatingHoliday(ProblemInterface):
         return holiday_dt
     raise Exception
 
+  def datetime_to_calendar(dt: datetime):
+    '''Convert month day year'''
+    months = ['January', 'February',
+              'March', 'April', 'May',
+              'June', 'July', 'August',
+              'September', 'October',
+              'November', 'December']
+    month = months[dt.month-1]
+    return f'{month} {dt.day} {dt.year}'
+
   def generate_quiz(num_problems,
                     start=1780,
                     end=2050,
@@ -276,7 +294,7 @@ class FloatingHoliday(ProblemInterface):
       self.year = year
       holiday = FloatingHoliday.holidays[self.holiday]
       self.dt = FloatingHoliday.floating_holiday(holiday, year)
-      self.calendar_date = date_time2calendar(self.dt)
+      self.calendar_date = FloatingHoliday.datetime_to_calendar(self.dt)
 
   def human_readable(self) -> (str, str):
     h = f'{self.holiday} of {self.year}'
@@ -348,9 +366,9 @@ if __name__ == '__main__':
   #ps = Addition.generate_quiz(10, digits_1=1, digits_2=1, pause=30)
   #ps.worksheet(speak=False)
   ps = DayOfTheWeek.generate_quiz(10)
-  ps.worksheet(speak=False)
+  ps.worksheet()
   ps = FloatingHoliday.generate_quiz(10)
-  ps.worksheet(speak=False)
+  ps.worksheet()
 
 
 # vim: set ts=2 sts=2 et sw=2 ft=python:
