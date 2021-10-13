@@ -92,7 +92,7 @@ class Quiz:
       log = self.log
     for problem in self.problems:
       q, a = problem.human_readable()
-      types.append(str(type(problem)))
+      types.append(str(type(problem).__name__))
       if speak:
         say(q)
       if write:
