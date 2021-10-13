@@ -80,10 +80,16 @@ class Quiz:
     self.finished = False
     self.log = log
 
-  def worksheet(self, speak=True, grade=True, write=True):
+  def set_log(self, log=None):
+    self.log = log
+    return self
+
+  def worksheet(self, speak=True, grade=True, write=True, log=None):
     grades = []
     times = []
     types = []
+    if log is None:
+      log = self.log
     for problem in self.problems:
       q, a = problem.human_readable()
       types.append(str(type(problem)))
@@ -110,6 +116,7 @@ class Quiz:
     if self.log is not None:
       with open(self.log, 'a+') as f:
         f.write(self.get_summary())
+        f.write('\n')
     print(self.get_summary())
 
 
@@ -117,6 +124,7 @@ class Quiz:
     if not self.finished:
       raise RuntimeError("Complete the worksheet before getting a summary")
     summary = {
+                "quiz_date": datetime.now().isoformat(),
                 "problem_types": [t for t in np.unique(self.types)],
                 "problem_count": len(self.problems),
                 "correct_count": int(np.sum(self.grades)),
@@ -212,8 +220,7 @@ class DayOfTheWeek(ProblemInterface):
     return self.answer == answer
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    return self.human_readable()
 
 
 class FloatingHoliday(ProblemInterface):
@@ -320,8 +327,28 @@ class FloatingHoliday(ProblemInterface):
     return self.dt.day == answer
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    return self.human_readable()
+
+
+def vertical_problem(op1, op2, op, ans) -> (str, str):
+  '''
+  op1: the first operand
+  op2: the second operand
+  op: the operator
+  ans: the answer
+  '''
+  if ans != '':
+    _, q = vertical_problem(op1, op2, op, '')
+  else:
+    q = ''
+  a = f'''\\begin{{array}}{{r}}
+    &{op1}\\\\
+    {op}\\!\\!\\!\\!\\!\\!&{op2}\\\\
+    \\hline
+    &{ans}
+    \\end{{array}}
+    '''
+  return q, a
 
 
 class Addition(ProblemInterface):
@@ -358,9 +385,14 @@ class Addition(ProblemInterface):
       pass
     return answer == self.answer
 
-  def to_latex(self) -> (str, str):
-    #TODO
-    pass
+  def to_latex(self, horizontal=True) -> (str, str):
+    if horizontal:
+      problem = f'{self.operand_1} + {self.operand_2}'
+      return problem, f'{problem} = {self.answer}'
+    return vertical_problem(self.operand_1,
+                            self.operand_2,
+                            '+',
+                            self.answer)
 
 
 class Subtraction(ProblemInterface):
@@ -397,9 +429,14 @@ class Subtraction(ProblemInterface):
       pass
     return answer == self.answer
 
-  def to_latex(self) -> (str, str):
-    #TODO
-    pass
+  def to_latex(self, horizontal=True) -> (str, str):
+    if horizontal:
+      problem = f'{self.operand_1} - {self.operand_2}'
+      return problem, f'{problem} = {self.answer}'
+    return vertical_problem(self.operand_1,
+                            self.operand_2,
+                            '-',
+                            self.answer)
 
 
 class Multiplication(ProblemInterface):
@@ -436,9 +473,14 @@ class Multiplication(ProblemInterface):
       pass
     return answer == self.answer
 
-  def to_latex(self) -> (str, str):
-    #TODO
-    pass
+  def to_latex(self, horizontal=True) -> (str, str):
+    if horizontal:
+      problem = f'{self.operand_1} \\times {self.operand_2}'
+      return problem, f'{problem} = {self.answer}'
+    return vertical_problem(self.operand_1,
+                            self.operand_2,
+                            '\\times',
+                            self.answer)
 
 
 class Division(ProblemInterface):
@@ -476,8 +518,10 @@ class Division(ProblemInterface):
     return answer == self.quotient
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    #TODO support long division notation
+    q = f'{self.dividend} / {self.divisor}'
+    a = f'{q} = {self.quotient}'
+    return q, a
 
 
 class Powers(ProblemInterface):
@@ -512,8 +556,9 @@ class Powers(ProblemInterface):
     return answer == self.answer
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    p = f'{self.value}^{self.power}'
+    a = f'{p}={self.answer}'
+    return p, a
 
 
 class Roots(ProblemInterface):
@@ -551,8 +596,9 @@ class Roots(ProblemInterface):
     return answer == self.answer
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    q = f'\\sqrt[{self.power}]{{{self.raised_value}}}'
+    a = f'{q}={self.answer}'
+    return q, a
 
 
 class WholeRoots(ProblemInterface):
@@ -590,8 +636,9 @@ class WholeRoots(ProblemInterface):
     return answer == self.answer
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    q = f'\\sqrt[{self.power}]{{{self.raised_value}}}'
+    a = f'{q}={self.answer}'
+    return q, a
 
 
 class Modulo(ProblemInterface):
@@ -626,8 +673,9 @@ class Modulo(ProblemInterface):
     return answer == self.answer
 
   def to_latex(self) -> (str, str):
-    #TODO
-    pass
+    q = f'{self.digits} % {self.modulo}'
+    a = f'{q}={self.answer}'
+    return q, a
 
 
 if __name__ == '__main__':
@@ -657,9 +705,9 @@ if __name__ == '__main__':
   #ps = Modulo.generate_quiz(10, pause=1)
   #ps.worksheet(speak=False)
   ps = DayOfTheWeek.generate_quiz(10)
-  ps.worksheet()
+  ps.worksheet(log='chris.log')
   ps = FloatingHoliday.generate_quiz(10)
-  ps.worksheet()
+  ps.worksheet(log='chris.log')
 
 
 # vim: set ts=2 sts=2 et sw=2 ft=python:
