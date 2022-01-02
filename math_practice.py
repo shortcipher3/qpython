@@ -41,7 +41,7 @@ class ProblemInterface:
   def match_answer(self, answer) -> bool:
     raise NotImplementedError("Inheriting class needs to implement this")
 
-  def to_latex(self) -> (str, str):
+  def to_latex(self, **kwargs) -> (str, str):
     raise NotImplementedError("Inheriting class needs to implement this")
 
   def ask_pause_answer(self) -> None:
@@ -84,7 +84,7 @@ class Quiz:
     self.log = log
     return self
 
-  def worksheet(self, speak=True, grade=True, write=True, log=None):
+  def worksheet(self, speak=True, grade=True, write=True, log=None) -> None:
     grades = []
     times = []
     types = []
@@ -118,6 +118,59 @@ class Quiz:
         f.write(self.get_summary())
         f.write('\n')
     print(self.get_summary())
+
+
+  def html_quiz(self, columns :int=4, horizontal: bool=False) -> str:
+    qs = '''
+<!DOCTYPE html>
+<html>
+<head>
+<title>MathJax TeX Test Page</title>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+</head>
+<body>
+<table>
+	'''
+    anns = qs
+    m = 0
+    for problem in self.problems:
+      q, a = problem.to_latex(horizontal=horizontal)
+      if m==0:
+        qs = f'''{qs}
+  <tr>'''
+        anns = f'''{anns}
+  <tr>'''
+      elif (m%columns) == 0:
+        qs = f'''{qs}
+  </tr>
+  <tr>'''
+        anns = f'''{anns}
+  </tr>
+  <tr>'''
+      m = m+1
+      qs = f'''{qs}
+    <td>
+      {q}
+    </td>'''
+      anns = f'''{anns}
+    <td>
+      {a}
+    </td>'''
+    qs = f'''{qs}
+  </tr>
+</html>
+</table>
+</body>
+'''
+    anns = f'''{anns}
+  </tr>
+</html>
+</table>
+</body>
+'''
+    return qs, anns
 
 
   def get_summary(self):
@@ -704,11 +757,18 @@ if __name__ == '__main__':
   #ps.worksheet(speak=False)
   #ps = Modulo.generate_quiz(10, pause=1)
   #ps.worksheet(speak=False)
-  ps = DayOfTheWeek.generate_quiz(10)
-  ps.worksheet(log='chris.log')
-  ps = FloatingHoliday.generate_quiz(10)
-  ps.worksheet(log='chris.log')
-
+  #ps = DayOfTheWeek.generate_quiz(10)
+  #ps.worksheet(log='chris.log')
+  #ps = FloatingHoliday.generate_quiz(10)
+  #ps.worksheet(log='chris.log')
+  ps = Addition.generate_quiz(20, digits_1=2, digits_2=2, pause=1)
+  qs_html, anns_html = ps.html_quiz(columns=5, horizontal=False)
+  with open('quiz_anns.html', 'w+') as f:
+    for line in anns_html:
+      f.write(line)
+  with open('quiz_qs.html', 'w+') as f:
+    for line in qs_html:
+      f.write(line)
 
 # vim: set ts=2 sts=2 et sw=2 ft=python:
 
