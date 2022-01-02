@@ -731,6 +731,48 @@ class Modulo(ProblemInterface):
     return q, a
 
 
+class DigitalRoot(ProblemInterface):
+  ''' Practice digital roots '''
+
+  def generate_quiz(num_problems, digits=6, modulo=9, pause=30):# -> Quiz:
+    rng = range(10**(digits-1), 10**digits)
+    x = choice(rng, (num_problems, ),
+               False if num_problems<(10**digits) else True)
+    problems = []
+    for a in x:
+      problems.append(DigitalRoot(a, pause))
+    return Quiz(problems)
+
+  def __init__(self, digits, pause=30):
+      super(DigitalRoot, self).__init__(pause)
+      self.digits = digits
+      digits = str(digits)
+      while len(digits) > 1:
+        sum = 0
+        for digit in digits:
+          sum = sum + int(digit)
+        digits = str(sum)
+      self.answer = sum
+
+  def human_readable(self) -> (str, str):
+    problem = f'the digital root of {self.digits}'
+    q = f'What is {problem}'
+    a = f'{problem} equals {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    q = f'digital_root({self.digits})'
+    a = f'digital_root({self.digits})={self.answer}'
+    return q, a
+
+
 if __name__ == '__main__':
   #dotw = DayOfTheWeek(dt, pause=5)
   #dotw.print_pause_answer()
