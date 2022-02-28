@@ -88,8 +88,8 @@ class Quiz:
     grades = []
     times = []
     types = []
-    if log is None:
-      log = self.log
+    if log is not None:
+      self.log = log
     for problem in self.problems:
       q, a = problem.human_readable()
       types.append(str(type(problem).__name__))
