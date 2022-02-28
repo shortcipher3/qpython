@@ -117,7 +117,7 @@ class Quiz:
     if not self.finished:
       raise RuntimeError("Complete the worksheet before getting a summary")
     summary = {
-    	            "problem_types": [t for t in np.unique(self.types)],
+                "problem_types": [t for t in np.unique(self.types)],
                 "problem_count": len(self.problems),
                 "correct_count": int(np.sum(self.grades)),
                 "total_time": float(np.sum(self.times)),
@@ -131,6 +131,10 @@ class Quiz:
     return json.dumps(summary)
 
 class DayOfTheWeek(ProblemInterface):
+  '''
+  Practice: given a date produce the day
+  of the week
+  '''
 
   def datetime_to_calendar(dt: datetime):
     '''Convert month day year'''
@@ -213,6 +217,10 @@ class DayOfTheWeek(ProblemInterface):
 
 
 class FloatingHoliday(ProblemInterface):
+  '''
+  Practice: given a floating holiday and
+  the year produce the day of the month
+  '''
 
   holidays = {
     'Thanksgiving Day': {
@@ -226,6 +234,8 @@ class FloatingHoliday(ProblemInterface):
     'Labor Day': {
      'weekday': 1, 'week': 1, 'month': 9},
     'Columbus Day': {
+     'weekday': 1, 'week': 2, 'month': 10},
+    'Canadian Thanksgiving Day': {
      'weekday': 1, 'week': 2, 'month': 10},
     }
 
@@ -315,6 +325,7 @@ class FloatingHoliday(ProblemInterface):
 
 
 class Addition(ProblemInterface):
+  '''Practice Addition'''
 
   def generate_quiz(num_problems, digits_1=1, digits_2=1, pause=30):# -> Quiz:
     range1 = range(10**(digits_1-1), 10**digits_1)
@@ -352,6 +363,272 @@ class Addition(ProblemInterface):
     pass
 
 
+class Subtraction(ProblemInterface):
+  '''Practice subtraction'''
+
+  def generate_quiz(num_problems, digits_1=1, digits_2=1, pause=30):# -> Quiz:
+    range1 = range(10**(digits_1-1), 10**digits_1)
+    range2 = range(10**(digits_2-1), 10**digits_2)
+    x = choice(range1, (num_problems, ),
+               False if num_problems<(10**digits_1) else True)
+    y = choice(range2, (num_problems, ),
+               False if num_problems<(10**digits_2) else True)
+    problems = []
+    for a, b in zip(x, y):
+      problems.append(Subtraction(a, b, pause))
+    return Quiz(problems)
+
+  def __init__(self, operand_1, operand_2, pause=30):
+      super(Subtraction, self).__init__(pause)
+      self.operand_1 = operand_1
+      self.operand_2 = operand_2
+      self.answer = operand_1 - operand_2
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.operand_1} minus {self.operand_2}'
+    q = f'What is {problem}'
+    a = f'{problem} equals {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
+
+class Multiplication(ProblemInterface):
+  '''Practice multiplication'''
+
+  def generate_quiz(num_problems, digits_1=1, digits_2=1, pause=30):# -> Quiz:
+    range1 = range(10**(digits_1-1), 10**digits_1)
+    range2 = range(10**(digits_2-1), 10**digits_2)
+    x = choice(range1, (num_problems, ),
+               False if num_problems<(10**digits_1) else True)
+    y = choice(range2, (num_problems, ),
+               False if num_problems<(10**digits_2) else True)
+    problems = []
+    for a, b in zip(x, y):
+      problems.append(Multiplication(a, b, pause))
+    return Quiz(problems)
+
+  def __init__(self, operand_1, operand_2, pause=30):
+      super(Multiplication, self).__init__(pause)
+      self.operand_1 = operand_1
+      self.operand_2 = operand_2
+      self.answer = operand_1 * operand_2
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.operand_1} times {self.operand_2}'
+    q = f'What is {problem}'
+    a = f'{problem} equals {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
+
+class Division(ProblemInterface):
+  '''Practice division'''
+
+  def generate_quiz(num_problems, digits_1=1, digits_2=1, pause=30):# -> Quiz:
+    range1 = range(10**(digits_1-1), 10**digits_1)
+    range2 = range(10**(digits_2-1), 10**digits_2)
+    x = choice(range1, (num_problems, ),
+               False if num_problems<(10**digits_1) else True)
+    y = choice(range2, (num_problems, ),
+               False if num_problems<(10**digits_2) else True)
+    problems = []
+    for a, b in zip(x, y):
+      problems.append(Division(a, b, pause))
+    return Quiz(problems)
+
+  def __init__(self, dividend, divisor, pause=30):
+      super(Division, self).__init__(pause)
+      self.dividend = dividend
+      self.divisor = divisor
+      self.quotient = dividend / divisor
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.dividend} divided by {self.divisor}'
+    q = f'What is {problem}'
+    a = f'{problem} equals {self.quotient}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.quotient
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
+
+class Powers(ProblemInterface):
+  '''Practice exponentiation'''
+
+  def generate_quiz(num_problems, digits=2, power=2, pause=30):# -> Quiz:
+    rng = range(10**(digits-1), 10**digits)
+    x = choice(rng, (num_problems, ),
+               False if num_problems<(10**digits) else True)
+    problems = []
+    for a in x:
+      problems.append(Roots(a, power, pause))
+    return Quiz(problems)
+
+  def __init__(self, value, power, pause=30):
+      super(Roots, self).__init__(pause)
+      self.value = value
+      self.power = power
+      self.answer = value**power
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.value} to the power of {self.power}'
+    q = f'What is {problem}?'
+    a = f'{problem} equals {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
+
+class Roots(ProblemInterface):
+  '''
+  Practice getting approximate roots of n
+  digit numbers
+  '''
+
+  def generate_quiz(num_problems, digits=2, power=2, pause=30):# -> Quiz:
+    rng = range(10**(digits-1), 10**digits)
+    x = choice(rng, (num_problems, ),
+               False if num_problems<(10**digits) else True)
+    problems = []
+    for a in x:
+      problems.append(Roots(a, power, pause))
+    return Quiz(problems)
+
+  def __init__(self, raised_value, power, pause=30):
+      super(Roots, self).__init__(pause)
+      self.raised_value = raised_value
+      self.power = power
+      self.answer = raised_value**(1.0/power)
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.power} root of {self.raised_value}'
+    q = f'What is the {problem}?'
+    a = f'The {problem} is {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
+
+class WholeRoots(ProblemInterface):
+  '''
+  Practice getting whole roots of n digit
+  numbers
+  '''
+
+  def generate_quiz(num_problems, digits=2, n=2, pause=30):# -> Quiz:
+    rng = range(10**(digits-1), 10**digits)
+    x = choice(rng, (num_problems, ),
+               False if num_problems<(10**digits) else True)
+    problems = []
+    for a in x:
+      problems.append(WholeRoots(a, n, pause))
+    return Quiz(problems)
+
+  def __init__(self, answer, power, pause=30):
+      super(WholeRoots, self).__init__(pause)
+      self.raised_value = answer**power
+      self.power = power
+      self.answer = answer
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.power} root of {self.raised_value}'
+    q = f'What is the {problem}?'
+    a = f'The {problem} is {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
+
+class Modulo(ProblemInterface):
+  ''' Practice modulo '''
+
+  def generate_quiz(num_problems, digits=6, modulo=9, pause=30):# -> Quiz:
+    rng = range(10**(digits-1), 10**digits)
+    x = choice(rng, (num_problems, ),
+               False if num_problems<(10**digits) else True)
+    problems = []
+    for a in x:
+      problems.append(Modulo(a, modulo, pause))
+    return Quiz(problems)
+
+  def __init__(self, digits, modulo, pause=30):
+      super(Modulo, self).__init__(pause)
+      self.digits = digits
+      self.modulo = modulo
+      self.answer = digits % modulo
+
+  def human_readable(self) -> (str, str):
+    problem = f'{self.digits} modulo {self.modulo}'
+    q = f'What is {problem}'
+    a = f'{problem} equals {self.answer}'
+    return q, a
+
+  def match_answer(self, answer) -> bool:
+    try:
+      answer = int(answer)
+    except:
+      pass
+    return answer == self.answer
+
+  def to_latex(self) -> (str, str):
+    #TODO
+    pass
+
 
 if __name__ == '__main__':
   #dotw = DayOfTheWeek(dt, pause=5)
@@ -363,7 +640,21 @@ if __name__ == '__main__':
   #additions = Addition(6, 7, pause=5)
   #additions.print_pause_answer()
   #print(additions.print_input())
-  #ps = Addition.generate_quiz(10, digits_1=1, digits_2=1, pause=30)
+  #ps = Addition.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = Subtraction.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = Multiplication.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = Division.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = Powers.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = WholeRoots.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = Roots.generate_quiz(10, pause=1)
+  #ps.worksheet(speak=False)
+  #ps = Modulo.generate_quiz(10, pause=1)
   #ps.worksheet(speak=False)
   ps = DayOfTheWeek.generate_quiz(10)
   ps.worksheet()
