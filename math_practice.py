@@ -568,7 +568,7 @@ class Roots(ProblemInterface):
   digit numbers
   '''
 
-  def generate_quiz(num_problems, digits=2, power=2, pause=30 abs_tol=0.1):# -> Quiz:
+  def generate_quiz(num_problems, digits=2, power=2, pause=30, abs_tol=0.1):# -> Quiz:
     rng = range(10**(digits-1), 10**digits)
     x = choice(rng, (num_problems, ),
                False if num_problems<(10**digits) else True)
