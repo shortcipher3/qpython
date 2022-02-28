@@ -3,6 +3,7 @@ Scripts to practice some of the "Secrets
 of Mental Math" a book with techniques
 written by Arthur T. Benjamin
 '''
+import math
 from numpy.random import choice, randint
 import numpy as np
 import time
@@ -567,20 +568,21 @@ class Roots(ProblemInterface):
   digit numbers
   '''
 
-  def generate_quiz(num_problems, digits=2, power=2, pause=30):# -> Quiz:
+  def generate_quiz(num_problems, digits=2, power=2, pause=30 abs_tol=0.1):# -> Quiz:
     rng = range(10**(digits-1), 10**digits)
     x = choice(rng, (num_problems, ),
                False if num_problems<(10**digits) else True)
     problems = []
     for a in x:
-      problems.append(Roots(a, power, pause))
+      problems.append(Roots(a, power, pause, abs_tol))
     return Quiz(problems)
 
-  def __init__(self, raised_value, power, pause=30):
+  def __init__(self, raised_value, power, pause=30, abs_tol=0.1):
       super(Roots, self).__init__(pause)
       self.raised_value = raised_value
       self.power = power
       self.answer = raised_value**(1.0/power)
+      self.abs_tol = abs_tol
 
   def human_readable(self) -> (str, str):
     problem = f'{self.power} root of {self.raised_value}'
@@ -590,7 +592,8 @@ class Roots(ProblemInterface):
 
   def match_answer(self, answer) -> bool:
     try:
-      answer = int(answer)
+      answer = float(answer)
+      return math.isclose(answer, self.answer, abs_tol=self.abs_tol)
     except:
       pass
     return answer == self.answer
@@ -711,4 +714,6 @@ if __name__ == '__main__':
 
 
 # vim: set ts=2 sts=2 et sw=2 ft=python:
+
+
 
