@@ -631,7 +631,7 @@ class Roots(ProblemInterface):
     return Quiz(problems)
 
   def __init__(self, raised_value, power, pause=30):
-      problems.append(Roots(a, power, pause, abs_tol))
+    problems.append(Roots(a, power, pause, abs_tol))
     return Quiz(problems)
 
   def __init__(self, raised_value, power, pause=30, abs_tol=0.1):
@@ -714,10 +714,10 @@ class Modulo(ProblemInterface):
     return Quiz(problems)
 
   def __init__(self, digits, modulo, pause=30):
-      super(Modulo, self).__init__(pause)
-      self.digits = digits
-      self.modulo = modulo
-      self.answer = digits % modulo
+    super(Modulo, self).__init__(pause)
+    self.digits = digits
+    self.modulo = modulo
+    self.answer = digits % modulo
 
   def human_readable(self) -> (str, str):
     problem = f'{self.digits} modulo {self.modulo}'
@@ -751,15 +751,15 @@ class DigitalRoot(ProblemInterface):
     return Quiz(problems)
 
   def __init__(self, digits, pause=30):
-      super(DigitalRoot, self).__init__(pause)
-      self.digits = digits
-      digits = str(digits)
-      while len(digits) > 1:
-        sum = 0
-        for digit in digits:
-          sum = sum + int(digit)
-        digits = str(sum)
-      self.answer = sum
+    super(DigitalRoot, self).__init__(pause)
+    self.digits = digits
+    digits = str(digits)
+    while len(digits) > 1:
+      sum = 0
+      for digit in digits:
+        sum = sum + int(digit)
+      digits = str(sum)
+    self.answer = sum
 
   def human_readable(self) -> (str, str):
     problem = f'the digital root of {self.digits}'
