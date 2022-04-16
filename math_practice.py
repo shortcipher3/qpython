@@ -292,6 +292,10 @@ class FloatingHoliday(ProblemInterface):
      'weekday': 1, 'week': 3, 'month': 2},
     'Memorial Day': {
      'weekday': 1, 'week': 5, 'month': 5},
+    'Mothers Day': {
+     'weekday': 7, 'week': 2, 'month': 5},
+    'Fathers Day': {
+     'weekday': 7, 'week': 3, 'month': 6},
     'Labor Day': {
      'weekday': 1, 'week': 1, 'month': 9},
     'Columbus Day': {
