@@ -16,6 +16,8 @@ try:
   import androidhelper
   droid = androidhelper.Android()
 except:
+  import pyttsx3
+  engine = pyttsx3.init()
   droid = None
 
 def say(text):
@@ -25,6 +27,8 @@ def say(text):
     while speakingEnd:
       speakingEnd = droid.ttsIsSpeaking().result
   else:
+    engine.say(text)
+    engine.runAndWait()
     print(text)
 
 class ProblemInterface:
@@ -500,9 +504,13 @@ class Subtraction(ProblemInterface):
 class Multiplication(ProblemInterface):
   '''Practice multiplication'''
 
-  def generate_quiz(num_problems, digits_1=1, digits_2=1, pause=30):# -> Quiz:
-    range1 = range(10**(digits_1-1), 10**digits_1)
-    range2 = range(10**(digits_2-1), 10**digits_2)
+  def generate_quiz(num_problems, digits_1=1, digits_2=1, min=None, max=None, pause=30):# -> Quiz:
+    if min is not None and max is not None:
+      range1 = range(min, max+1)
+      range2 = range(min, max+1)
+    else:
+      range1 = range(10**(digits_1-1), 10**digits_1)
+      range2 = range(10**(digits_2-1), 10**digits_2)
     x = choice(range1, (num_problems, ),
                False if num_problems<(10**digits_1) else True)
     y = choice(range2, (num_problems, ),
@@ -814,20 +822,30 @@ if __name__ == '__main__':
   #ps.worksheet(log='chris.log')
   #ps = FloatingHoliday.generate_quiz(10)
   #ps.worksheet(log='chris.log')
-  ps = Addition.generate_quiz(20, digits_1=2, digits_2=2, pause=1)
-  qs_html, anns_html = ps.html_quiz(columns=5, horizontal=False)
-  with open('quiz_anns.html', 'w+') as f:
-    for line in anns_html:
-      f.write(line)
-  with open('quiz_qs.html', 'w+') as f:
-    for line in qs_html:
-      f.write(line)
+  #ps = Addition.generate_quiz(20, digits_1=2, digits_2=2, pause=1)
+  #qs_html, anns_html = ps.html_quiz(columns=5, horizontal=False)
+  #with open('quiz_anns.html', 'w+') as f:
+  #  for line in anns_html:
+  #    f.write(line)
+  #with open('quiz_qs.html', 'w+') as f:
+  #  for line in qs_html:
+  #    f.write(line)
 
-  ps = DayOfTheWeek.generate_quiz(10)
-  ps.worksheet(log='chris.log')
-  ps = FloatingHoliday.generate_quiz(10)
-  ps.worksheet(log='chris.log')
+  #ps = DayOfTheWeek.generate_quiz(10)
+  #ps.worksheet(log='chris.log')
+  #ps = FloatingHoliday.generate_quiz(10)
+  #ps.worksheet(log='chris.log')
 
+  #ps = Multiplication.generate_quiz(100, min=0, max=12, pause=1)
+  #qs_html, anns_html = ps.html_quiz(columns=5, horizontal=False)
+  #with open('quiz_anns.html', 'w+') as f:
+  #  for line in anns_html:
+  #    f.write(line)
+  #with open('quiz_qs.html', 'w+') as f:
+  #  for line in qs_html:
+  #    f.write(line)
+  ps = Multiplication.generate_quiz(2, min=0, max=12, pause=1)
+  ps.worksheet(speak=True)
 
 # vim: set ts=2 sts=2 et sw=2 ft=python:
 
